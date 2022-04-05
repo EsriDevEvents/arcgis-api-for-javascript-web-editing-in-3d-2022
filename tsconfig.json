@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "isolatedModules": true,
+    "moduleResolution": "Node",
+    "lib": ["ESNext", "DOM"],
+    "typeRoots": ["node_modules/@types"]
+  },
+  "include": ["**/*.ts", "node_modules/@arcgis/core/**/*.ts"],
+  "exclude": ["reveal.js/**"]
+}

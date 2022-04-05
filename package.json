@@ -1,0 +1,25 @@
+{
+  "name": "ds2022-web-editing-in-3d",
+  "version": "0.0.1",
+  "description": "Web Editing in 3D presentation and accompanying code samples that were shown at the Esri Developer Summit 2022",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "types": "tsc --noEmit"
+  },
+  "repository": {
+    "url": "https://github.com/esridevsummit/DS2022-Web-Editing-in-3D"
+  },
+  "author": "",
+  "license": "MIT",
+  "homepage": "https://esridevsummit.github.io/DS2022-Web-Editing-in-3D/index.html",
+  "dependencies": {
+    "@arcgis/core": "^4.23.7"
+  },
+  "devDependencies": {
+    "@types/reveal": "4.2.0",
+    "@types/sortablejs": "1.10.7",
+    "typescript": "4.6.2",
+    "vite": "^2.8.6"
+  }
+}
