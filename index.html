@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <title>Esri Dev Summit 2022 - ArcGIS JS API for JavaScript: Web editing in 3D</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet" />
+
+    
+    
+    
+    
+    
+    <script type="module" crossorigin src="https://esridevsummit.github.io/DS2022-Web-Editing-in-3D/assets/presentation.25932edd.js"></script>
+    <link rel="modulepreload" href="https://esridevsummit.github.io/DS2022-Web-Editing-in-3D/assets/modulepreload-polyfill.b7f2da20.js">
+    <link rel="stylesheet" href="https://esridevsummit.github.io/DS2022-Web-Editing-in-3D/assets/presentation.f389d12f.css">
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section data-background="img/2022/dev-summit/bg-1.png" data-background-size="cover">
+          <h1 style="text-align: left; font-size: 60px">
+            ArcGIS JS API for JavaScript: <br />
+            Web editing in 3D
+          </h1>
+          <p style="text-align: left; font-size: 30px; color: var(--r-section-subhead-color)">
+            Hugo Campos & Jesse van den Kieboom
+          </p>
+          <p style="text-align: left; font-size: 30px">
+            Slides:
+            <a href="https://esridevsummit.github.io/DS2022-Web-Editing-in-3D/"><code>https://esridevsummit.github.io/DS2022-Web-Editing-in-3D/</code></a>
+          </p>
+        </section>
+
+        <section data-background="img/2022/dev-summit/bg-7.png">
+          <h2 id="agenda">Agenda</h2>
+          <ul style="font-size: 2rem">
+            <li>From editing in 2D to editing in 3D</li>
+            <li>SketchViewModel basics in 3D</li>
+            <li>FeatureLayer and the Editor widget</li>
+            <li>SceneLayer editing</li>
+            <li>Customized Editing</li>
+          </ul>
+        </section>
+
+        <section class="align-left" data-background="img/2022/dev-summit/bg-2.png">
+          <h2>From editing in 2D to editing in 3D</h2>
+          <div class="two-columns">
+            <div class="left-column" style="width: 50%">
+              <ul style="font-size: 2rem">
+                <li>
+                  Using the <code>Editor</code> widget in a <code>SceneView</code> works out-of-the
+                  box.
+                </li>
+                <li>
+                  <code>SketchViewModel</code>, <code>FeatureForm</code> and
+                  <code>Editor</code> work similarly in 2D and 3D.
+                </li>
+                <li>No need to prepare data specifically for 3D.</li>
+              </ul>
+
+              <pre data-fragment-id="use-scene-view" class="code-snippet fragment">
+                <button class="play"></button>
+                <code class="lang-ts" data-trim>
+                  // const view = new MapView({ /* ... */ });
+                  const view = new SceneView({ /* ... */ });
+
+                  const editor = new Editor({ view /* ... */})
+                </code>
+              </pre>
+            </div>
+            <div class="right-column">
+              <iframe data-src="./src/samples/editing-2d-to-3d/index.html"></iframe>
+            </div>
+          </div>
+        </section>
+
+        <!--
+         Tree
+        -->
+        <section
+          data-slideId="tree"
+          class="align-left"
+          data-background="img/2022/dev-summit/bg-2.png"
+        >
+          <h2 class="header">Placing a tree on the ground</h2>
+
+          <div class="two-columns">
+            <div class="left-column">
+              <div data-fragment-id="place-point" class="code-snippet">
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    const tree = new Graphic({
+                      geometry: new Point({
+                        x: 1099766.76,
+                        y: 5865813.01
+                        // Note: no Z value!
+                      })
+                    });
+
+                    const trees = new GraphicsLayer({
+                      elevationInfo: { mode: "on-the-ground" }
+                    });
+
+                    trees.add(tree);
+                  </code>
+                </pre>
+              </div>
+
+              <div data-fragment-id="set-tree-symbol" class="code-snippet fragment">
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    const webStyle = new WebStyleSymbol({
+                      /* ... */
+                    });
+
+                    tree.symbol = await webStyle.fetchSymbol();
+                  </code>
+                </pre>
+              </div>
+            </div>
+            <div class="right-column">
+              <iframe data-src="./src/samples/tree/index.html"></iframe>
+            </div>
+          </div>
+        </section>
+
+        <section class="align-left" data-background="img/2022/dev-summit/bg-2.png">
+          <h2 class="header">Web Style Symbols</h2>
+          <iframe
+            class="r-stretch"
+            data-src="https://developers.arcgis.com/javascript/latest/visualization/symbols-color-ramps/esri-web-style-symbols-3d/#schematic-vegetation"
+          ></iframe>
+        </section>
+
+        <!--
+         Tree (Editable)
+        -->
+        <section
+          data-slideId="tree-editable"
+          class="align-left"
+          data-background="img/2022/dev-summit/bg-2.png"
+        >
+          <h2 class="header">Moving a tree on the ground</h2>
+
+          <div class="two-columns">
+            <div class="left-column">
+              <div data-fragment-id="update-tree" class="code-snippet">
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    const sketchVM = new SketchViewModel({
+                      view,
+                      layer: trees
+                    });
+
+                    sketchVM.update(tree);
+                  </code>
+                </pre>
+              </div>
+            </div>
+            <div class="right-column">
+              <iframe data-src="./src/samples/tree/index.html"></iframe>
+            </div>
+          </div>
+        </section>
+
+        <!--
+         Antenna
+        -->
+        <section
+          data-slideId="antenna"
+          class="align-left"
+          data-background="img/2022/dev-summit/bg-2.png"
+        >
+          <h2 class="header">Placing an antenna on the roof</h2>
+
+          <div class="two-columns">
+            <div class="left-column">
+              <div data-fragment-id="create-point" class="code-snippet">
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    sketchVM.layer = antennas;
+                    sketchVM.pointSymbol = antennaSymbol;
+
+                    sketchVM.on("create", (event) => {
+                      if (event.state === "complete") {
+                        sketchVM.update(event.graphic);
+                      }
+                    });
+
+                    sketchVM.create("point");
+                  </code>
+                </pre>
+              </div>
+
+              <div
+                data-fragment-id="set-relative-to-scene"
+                class="code-snippet play-container fragment"
+              >
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    antennas.elevationInfo = {
+                      mode: "relative-to-scene"
+                    };
+                  </code>
+                </pre>
+              </div>
+            </div>
+            <div class="right-column">
+              <iframe data-src="./src/samples/antenna/index.html"></iframe>
+            </div>
+          </div>
+        </section>
+
+        <!--
+         Airplane
+        -->
+        <section
+          data-slideId="airplane"
+          class="align-left"
+          data-background="img/2022/dev-summit/bg-2.png"
+        >
+          <h2 class="header">Placing an airplane in the air</h2>
+
+          <div class="two-columns">
+            <div class="left-column">
+              <div data-fragment-id="create" class="code-snippet">
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    const geometry = new Point({
+                      x: 1099766.76,
+                      y: 5865813.01,
+                      z: 20 // We now have elevation!!!
+                    });
+
+                    const airplane = new Graphic({ geometry, symbol });
+
+                    const airplanes = new GraphicsLayer({
+                      elevationInfo: { mode: "relative-to-ground" },
+                    });
+                    airplanes.add(airplane);
+                  </code>
+                </pre>
+              </div>
+
+              <div data-fragment-id="set-absolute-height" class="code-snippet fragment">
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    airplanes.elevationInfo = {
+                      mode: "absolute-height"
+                    };
+                    airplane.geometry.z = 1708; // Runway elevation
+                  </code>
+                </pre>
+              </div>
+            </div>
+            <div class="right-column">
+              <iframe data-src="./src/samples/airplane/index.html"></iframe>
+            </div>
+          </div>
+        </section>
+
+        <!--
+         Airport building
+        -->
+        <section
+          data-slideId="terminal"
+          class="align-left"
+          data-background="img/2022/dev-summit/bg-2.png"
+        >
+          <h2 class="header">Sketching a new airport building</h2>
+
+          <div class="two-columns">
+            <div class="left-column">
+              <div data-fragment-id="create" class="code-snippet">
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    const terminals = new GraphicsLayer();
+
+                    sketchVM.layer = terminals;
+                    sketchVM.polygonSymbol = new PolygonSymbol3D({
+                      symbolLayers: [new ExtrudeSymbol3DLayer({
+                        size: 10
+                      })]
+                    });
+
+                    sketchVM.create("polygon");
+                  </code>
+                </pre>
+              </div>
+
+              <div data-fragment-id="enable-snapping" class="code-snippet fragment">
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    Object.assign(sketchVM.snappingOptions, {
+                      enabled: true,
+                      featureSources: [{ layer: terminals }]
+                    });
+                  </code>
+                </pre>
+              </div>
+
+              <div data-fragment-id="enable-edge-offset" class="code-snippet fragment">
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    sketchVM
+                      .defaultUpdateOptions
+                      .reshapeOptions
+                      .edgeOperation = "offset";
+                  </code>
+                </pre>
+              </div>
+            </div>
+            <div class="right-column">
+              <iframe data-src="./src/samples/airport-terminal/index.html"></iframe>
+            </div>
+          </div>
+        </section>
+
+        <!--
+          FeatureLayer
+        -->
+        <section
+          data-slideId="feature-layer"
+          class="align-left"
+          data-background="img/2022/dev-summit/bg-2.png"
+        >
+          <h2 class="header">FeatureLayer and the Editor widget</h2>
+
+          <div class="two-columns">
+            <div class="left-column r-stack no-margin">
+              <div
+                data-fragment-id="editor-widget"
+                data-fragment-index="0"
+                class="code-snippet fragment fade-out"
+              >
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                  const aircraftLayer = new FeatureLayer({
+                    title: "Aircraft",
+                    url: "...",
+                    elevationInfo: { mode: "absolute-height" },
+                    /* ... */
+                  });
+                  view.map.add(aircraftLayer);
+
+                  const editor = new Editor({ view });
+                  view.ui.add(editor, "top-right");
+                  </code>
+                </pre>
+              </div>
+
+              <div
+                data-fragment-id="visual-variables-all"
+                data-fragment-index="0"
+                class="code-snippet fragment fade-in-then-out"
+              >
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    const aircraftLayer = new FeatureLayer({
+                      /* ... */
+                      renderer: new UniqueValueRenderer({
+                        /* ... */
+                        visualVariables: [
+                          new SizeVariable({
+                            axis: "height",
+                            field: "SIZE",
+                            valueUnit: "meters",
+                          }),
+                          new RotationVariable({
+                            field: "ROTATION",
+                            rotationType: "geographic",
+                          }),
+                        ],
+                      })
+                    });
+                  </code>
+                </pre>
+              </div>
+
+              <div
+                data-fragment-id="visual-variables-rotation"
+                class="code-snippet fragment fade-in-then-out"
+              >
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    const newRenderer = renderer.clone();
+
+                    newRenderer.visualVariables = [
+                      new RotationVariable({
+                        field: "ROTATION",
+                        rotationType: "geographic",
+                      }),
+                    ];
+
+                    aircraftLayer.renderer = newRenderer;
+                  </code>
+                </pre>
+              </div>
+
+              <div data-fragment-id="layer-infos" class="code-snippet fragment fade-in-then-out">
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    editor.layerInfos = [{
+                      layer: aircraftLayer,
+                      formTemplate: new FormTemplate({
+                        elements: [
+                          new FieldElement({
+                            fieldName: "ROTATION",
+                            label: "Rotation"
+                          })
+                        ],
+                      })
+                    }];
+                  </code>
+                </pre>
+              </div>
+            </div>
+            <div class="right-column">
+              <iframe data-src="./src/samples/feature-layer/index.html"></iframe>
+            </div>
+          </div>
+        </section>
+
+        <!--
+          SceneLayer
+        -->
+        <section
+          data-slideId="scene-layer"
+          class="align-left"
+          data-background="img/2022/dev-summit/bg-2.png"
+        >
+          <h2 class="header">SceneLayer editing</h2>
+
+          <div class="two-columns">
+            <div class="left-column v-stack no-margin" style="width: 50%">
+              <div data-fragment-id="add-widget" class="code-snippet">
+                <button class="play"></button>
+                <pre>
+                  <code class="lang-ts" data-trim>
+                    const editor = new Editor({ view });
+
+                    view.ui.add(editor, "top-right");
+                  </code>
+                </pre>
+              </div>
+
+              <div
+                data-fragment-id="add-widget"
+                class="code-snippet"
+                style="place-content: center; display: grid; flex-grow: 1"
+              >
+                <img src="data:image/png;base64,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" style="filter: invert(1)" />
+              </div>
+            </div>
+            <div class="right-column">
+              <iframe data-src="./src/samples/scene-layer/index.html"></iframe>
+            </div>
+          </div>
+        </section>
+
+        <section data-background="img/2022/dev-summit/bg-2.png">
+          <h1>Customized editing</h1>
+          <iframe class="r-stretch" data-src="./src/samples/customized-editing/index.html"></iframe>
+        </section>
+
+        <section class="align-left" data-background="img/2022/dev-summit/bg-3.png">
+          <h2>Documentation & Resources</h2>
+          <ul class="align-left">
+            <li>
+              <a
+                href="https://developers.arcgis.com/javascript/latest/sample-code/scene-elevationinfo/"
+              >
+                Sample: Elevation options
+              </a>
+            </li>
+
+            <li>
+              <a href="https://developers.arcgis.com/javascript/latest/sample-code/sketch-3d/">
+                Sample: Sketch in 3D
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://developers.arcgis.com/javascript/latest/sample-code/widgets-editor-3d/"
+                >Sample: Edit features in 3D with the Editor widget</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://developers.arcgis.com/javascript/latest/sample-code/widgets-editor-3d-scenelayer/"
+                >Sample: SceneLayer attribute editing</a
+              >
+            </li>
+            <li>
+              <a
+                href="https://developers.arcgis.com/javascript/latest/sample-code/layers-integratedmeshlayer-modification/"
+              >
+                Sample: IntegratedMeshLayer modifications
+              </a>
+            </li>
+            <br />
+            <li>
+              <a
+                href="https://developers.arcgis.com/javascript/latest/api-reference/esri-widgets-Sketch-SketchViewModel.html"
+              >
+                API Docs: SketchViewModel
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://developers.arcgis.com/javascript/latest/api-reference/esri-views-interactive-snapping-SnappingOptions.html"
+              >
+                API Docs: SnappingOptions
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://developers.arcgis.com/javascript/latest/api-reference/esri-layers-IntegratedMeshLayer.html#modifications"
+              >
+                API Docs: IntegratedMeshLayer modifications
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <!-- FEEDBACK SLIDE: -->
+        <section data-background="img/2022/dev-summit/bg-7.png">
+          <h3>Please share your feedback in the app</h3>
+          <img src="https://esridevsummit.github.io/DS2022-Web-Editing-in-3D/assets/feedback.5426b271.png" />
+        </section>
+
+        <!-- ESRI LOGO SLIDE: -->
+        <section data-background="img/2022/dev-summit/bg-8.png">
+          <!-- <img src="img/esri-science-logo-white.png" /> -->
+        </section>
+      </div>
+    </div>
+
+    
+  </body>
+</html>
